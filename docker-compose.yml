@@ -39,23 +39,25 @@ services:
     volumes:
       - ./petzeira-mysql:/var/lib/mysql
 
-  prisma:
-    image: node
+  db-admin:
+    image: phpmyadmin/phpmyadmin
     restart: always
-    working_dir: /code
     ports:
-      - 5555:5555
-    expose:
-      - 5555
-    environment:
-      - DATABASE_URL=mysql://petzeira_user:deOndeVemACalma2003@db:3306/petzeira
+      - 8080:80
     networks:
       - petzeira-network
+
+  mqtt-broker:
+    image: eclipse-mosquitto
+    ports:
+        - 1883:1883
+        - 8883:8883
+        - 9001:9001
     volumes:
-      - ./:/code
-    command: sh -c "npx prisma studio"
-    depends_on:
-      - "db"
+        - ./mosquitto/config:/mosquitto/config
+        - ./mosquitto/data:/mosquitto/data
+    networks:
+        - petzeira-network
 
 networks:
   petzeira-network:
