@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id      String   @id @default(uuid())
+  name    String
+  email   String   @unique
+  password String
+  modules Module[]
+  events  Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Module {
+  serial     String
+  name       String
+  ownerId    String
+  owner      User      @relation(fields: [ownerId], references: [id])
+  type       String
+  measurements Measurement[]
+  events       Event[]
+  scheduling   Scheduling[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+   @@id([serial, type])
+}
+
+model Scheduling {
+  id         String    @id @default(uuid())
+  moduleId   String
+  moduleSerial    String
+  moduleType      String
+  module          Module @relation(fields: [moduleSerial, moduleType], references: [serial, type])
+  value      DateTime  @db.Time
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Measurement {
+  id         String    @id @default(uuid())
+  moduleSerial    String
+  moduleType      String
+  module          Module @relation(fields: [moduleSerial, moduleType], references: [serial, type])
+  value      Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Event {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  moduleSerial    String?
+  moduleType      String?
+  module          Module? @relation(fields: [moduleSerial, moduleType], references: [serial, type])
+  event      String
+  extraData  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

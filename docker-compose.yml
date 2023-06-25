@@ -1,0 +1,61 @@
+# @format
+
+version: "3.3"
+
+services:
+  node:
+    image: node
+    restart: always
+    working_dir: /code
+    ports:
+      - 3333:3333
+    environment:
+      - SECRET=todoCarnavelTemSeuFim2001
+      - MAX_TOKEN_TIME=1000
+      - DATABASE_URL=mysql://petzeira_user:deOndeVemACalma2003@db:3306/petzeira
+      - PORT=3333
+    networks:
+      - petzeira-network
+    volumes:
+      - ./:/code
+    command: sh -c "npm start"
+    depends_on:
+      - "db"
+
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: petzeira
+      MYSQL_USER: petzeira_user
+      MYSQL_PASSWORD: deOndeVemACalma2003
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    networks:
+      - petzeira-network
+    volumes:
+      - ./petzeira-mysql:/var/lib/mysql
+
+  prisma:
+    image: node
+    restart: always
+    working_dir: /code
+    ports:
+      - 5555:5555
+    expose:
+      - 5555
+    environment:
+      - DATABASE_URL=mysql://petzeira_user:deOndeVemACalma2003@db:3306/petzeira
+    networks:
+      - petzeira-network
+    volumes:
+      - ./:/code
+    command: sh -c "npx prisma studio"
+    depends_on:
+      - "db"
+
+networks:
+  petzeira-network:
