@@ -18,7 +18,7 @@ services:
       - petzeira-network
     volumes:
       - ./:/code
-    command: sh -c "npm start"
+    command: sh -c "npm install && npm start"
     depends_on:
       - "db"
 
