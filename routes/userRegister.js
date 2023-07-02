@@ -42,6 +42,7 @@ router.post("/register", async (req, res) => {
 			res.json({ message: "Account successfuly created!" });
 		}
 	} catch (error) {
+		console.log(error)
 		if (error.meta && error.meta.target)
 			switch (error.meta.target) {
 				case "User_email_key":
