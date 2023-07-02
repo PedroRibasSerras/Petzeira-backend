@@ -2,11 +2,14 @@
 
 const express = require("express");
 const session = require("express-session");
+const PetzeiraMqtt = require("./services/petzeira-mqtt/petzeiraMqtt")
+
+const petzeiraMqtt = new PetzeiraMqtt()
 
 const userRegisterRoutes = require("./routes/userRegister");
 const userRoutes = require("./routes/user");
 const authRoutes = require("./routes/auth");
-const moduleRoutes = require("./routes/modulo")
+const moduleRoutes = require("./routes/modulo");
 
 const authMiddleware = require("./middlewares/auth");
 const cookieParser = require("cookie-parser");
@@ -16,6 +19,8 @@ const secret = process.env.SECRET;
 
 const app = express();
 const port = 3333;
+
+petzeiraMqtt.connect()
 
 app.use(express.json());
 app.use(cookieParser());
@@ -41,7 +46,7 @@ app.use("/auth", authRoutes);
 app.use(userRegisterRoutes);
 app.use(authMiddleware);
 app.use("/user", userRoutes);
-app.use("/module", moduleRoutes)
+app.use("/module", moduleRoutes);
 
 app.listen(port, () => {
 	console.log(`Server listening on http://localhost:${port}`);

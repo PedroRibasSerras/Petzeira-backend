@@ -11,6 +11,7 @@ services:
       - 3333:3333
     environment:
       - SECRET=todoCarnavelTemSeuFim2001
+      - MQTT_SECRET=eDeLagrima2005
       - MAX_TOKEN_TIME=1000
       - DATABASE_URL=mysql://petzeira_user:deOndeVemACalma2003@db:3306/petzeira
       - PORT=3333
