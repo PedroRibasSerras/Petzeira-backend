@@ -3,6 +3,7 @@
 const express = require("express");
 const session = require("express-session");
 const PetzeiraMqtt = require("./services/petzeira-mqtt/petzeiraMqtt")
+const cors = require('cors')
 
 const petzeiraMqtt = new PetzeiraMqtt()
 
@@ -22,6 +23,7 @@ const port = 3333;
 
 petzeiraMqtt.connect()
 
+app.use(cors())
 app.use(express.json());
 app.use(cookieParser());
 
