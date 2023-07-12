@@ -105,7 +105,14 @@ router.get("/schedule", async (req, res) => {
 			},
 			select: {
 				ownerId: true,
-				scheduling: true,
+				scheduling: {
+					select:{
+						id:true,
+						moduleSerial:true,
+						moduleType:true,
+						time:true
+					}
+				},
 			},
 		});
 
@@ -127,7 +134,7 @@ router.get("/schedule", async (req, res) => {
 router.post("/schedule", async (req, res) => {
 	try {
 		const { serial, moduleType: type, time } = req.body;
-
+		
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -145,6 +152,9 @@ router.post("/schedule", async (req, res) => {
 			throw "Unauthorized";
 		}
 
+		let [hours,minutes] = String(time).split(":")
+		hours += 3
+		time = hours * 60 * 60 + minutes * 60
 		let newSchedule = await prisma.scheduling.create({
 			data: {
 				moduleSerial: serial,
@@ -160,6 +170,12 @@ router.post("/schedule", async (req, res) => {
 				moduleSerial: serial,
 				moduleType: type,
 			},
+			select:{
+				id:true,
+				moduleSerial:true,
+				moduleType:true,
+				time:true
+			}
 		});
 
 		req.mqttClient.sendCommand(serial, "sendSchedule", JSON.stringify(schedules));
