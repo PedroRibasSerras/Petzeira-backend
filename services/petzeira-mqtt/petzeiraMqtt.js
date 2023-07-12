@@ -309,7 +309,7 @@ class PetzeiraMqtt {
 	}
 
 	setTimeTimer() {
-		setInterval(this.sendDate.bind(this), 1);
+		setInterval(this.sendDate.bind(this), 1000 * 60 * 1);
 	}
 
 	sendMessage(endpoint, message) {
