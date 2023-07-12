@@ -160,7 +160,7 @@ router.post("/schedule", async (req, res) => {
 			data: {
 				moduleSerial: serial,
 				moduleType: type,
-				time:newTime,
+				time: `${newTime}`,
 			},
 		});
 		console.log("after create")
