@@ -80,7 +80,9 @@ let commands = {
 					JSON.stringify(schedule)
 				);
 			}
+			console.log(schedule)
 		} catch (error) {
+			console.log(error)
 			if (error.meta && error.meta.target)
 				petzeiraMqtt.sendCommand(data.serial, data.command, error.meta.target);
 			else petzeiraMqtt.sendCommand(data.serial, data.command, error);
