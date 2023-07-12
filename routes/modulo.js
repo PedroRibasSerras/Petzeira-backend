@@ -392,4 +392,33 @@ router.post("/measurements", async (req, res) => {
 	}
 });
 
+router.get("/events", async (req, res) => {
+	try {
+		const { serial, moduleType: type} = req.body;
+
+		let petzeiraModule = await prisma.module.findUnique({
+			where: {
+				serial_type: { serial, type },
+			},
+			select: {
+				ownerId: true,
+				events: true,
+			},
+		});
+
+		if (!petzeiraModule) {
+			return res.status(400).json({ error: "No Module Error" });
+		}
+
+		if (petzeiraModule.ownerId != req.session.user.id) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+		console.log(petzeiraModule)
+		res.json(petzeiraModule.events);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
 module.exports = router;
