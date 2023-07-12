@@ -153,16 +153,14 @@ router.post("/schedule", async (req, res) => {
 			throw "Unauthorized";
 		}
 
-		console.log("before time")
 		let [hours,minutes] = String(time).split(":")
 		hours += 3
-		time = hours * 60 * 60 + minutes * 60
-		console.log("after time")
+		newTime = hours * 60 * 60 + minutes * 60
 		let newSchedule = await prisma.scheduling.create({
 			data: {
 				moduleSerial: serial,
 				moduleType: type,
-				time,
+				time:newTime,
 			},
 		});
 		console.log("after create")
