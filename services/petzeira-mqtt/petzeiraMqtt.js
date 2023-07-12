@@ -276,6 +276,7 @@ class PetzeiraMqtt {
 
 				let data = {};
 				if (hasData) {
+					console.log("hasData")
 					tempMessage = tempMessage.substring(position + 1);
 					try {
 						data = JSON.parse(tempMessage);
@@ -283,6 +284,8 @@ class PetzeiraMqtt {
 						this.sendCommand(topics[1], command, "Malformed JSON");
 						return -1;
 					}
+
+					console.log(data)
 				}
 
 				let decodedToken = decodeToken(token);
