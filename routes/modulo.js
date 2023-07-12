@@ -145,7 +145,7 @@ router.post("/schedule", async (req, res) => {
 			throw "Unauthorized";
 		}
 
-		let schedule = await prisma.scheduling.create({
+		let newSchedule = await prisma.scheduling.create({
 			data: {
 				moduleSerial: serial,
 				moduleType: type,
@@ -153,7 +153,16 @@ router.post("/schedule", async (req, res) => {
 			},
 		});
 
-		res.json(schedule);
+		res.json(newSchedule);
+
+		let schedules = await prisma.scheduling.findMany({
+			where: {
+				moduleSerial: serial,
+				moduleType: type,
+			},
+		});
+
+		req.mqttClient.sendCommand(serial, "sendSchedule", JSON.stringify(schedules));
 	} catch (error) {
 		console.error(error);
 		if (error.meta && error.meta.target)
@@ -174,7 +183,7 @@ router.delete("/schedule", async (req, res) => {
 				id: schedulingId,
 			},
 			select: {
-				module: { select: { ownerId: true } },
+				module: { select: { ownerId: true, serial: true, type: true } },
 			},
 		});
 
@@ -199,7 +208,19 @@ router.delete("/schedule", async (req, res) => {
 			return res.status(400).json({ error: "Scheduling Delete Error" });
 		}
 
+		
 		res.json({ message: "Scheduling Deleted Successfuly" });
+
+		let schedules = await prisma.scheduling.findMany({
+			where: {
+				moduleSerial: schedule.module.serial,
+				moduleType: schedule.module.type,
+			},
+		});
+
+		req.mqttClient.sendCommand(schedule.module.serial, "sendSchedule", JSON.stringify(schedules));
+
+		
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ error: "Internal server error" });
@@ -238,6 +259,133 @@ router.get("/fed", async (req, res) => {
 		}
 
 		res.json(petzeiraModule.events);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+router.post("/fed", async (req, res) => {
+	try {
+		const { serial, moduleType: type} = req.body;
+		let petzeiraModule = await prisma.module.findUnique({
+			where: {
+				serial_type: { serial, type },
+			},
+			select: {
+				ownerId: true,
+			},
+		});
+
+		if (!petzeiraModule) {
+			return res.status(400).json({ error: "No Module Error" });
+		}
+
+		if (petzeiraModule.ownerId != req.session.user.id) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		req.mqttClient.sendCommand(serial, "act", JSON.stringify({type}));
+
+
+		res.json({message: "Requested successfuly"});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+router.post("/calibre", async (req, res) => {
+	try {
+		const { serial, moduleType: type, calibreWeight} = req.body;
+		let petzeiraModule = await prisma.module.findUnique({
+			where: {
+				serial_type: { serial, type },
+			},
+			select: {
+				ownerId: true,
+			},
+		});
+
+		if (!petzeiraModule) {
+			return res.status(400).json({ error: "No Module Error" });
+		}
+
+		if (petzeiraModule.ownerId != req.session.user.id) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		req.mqttClient.sendCommand(serial, "calibre", JSON.stringify({moduleType: type, calibreWeight}));
+
+
+		res.json({message: "Requested successfuly"});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+
+router.get("/measurements", async (req, res) => {
+	try {
+		const { serial, moduleType: type, limit, page } = req.body;
+		let measurementsQueryConfig = {};
+		if (limit != undefined && page != undefined) {
+			measurementsQueryConfig.skip = page * limit;
+			measurementsQueryConfig.take = limit;
+		} else {
+			measurementsQueryConfig = true;
+		}
+
+		let petzeiraModule = await prisma.module.findUnique({
+			where: {
+				serial_type: { serial, type },
+			},
+			select: {
+				ownerId: true,
+				measurements: measurementsQueryConfig,
+			},
+		});
+
+		if (!petzeiraModule) {
+			return res.status(400).json({ error: "No Module Error" });
+		}
+
+		if (petzeiraModule.ownerId != req.session.user.id) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		res.json(petzeiraModule.measurements);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+router.post("/measurements", async (req, res) => {
+	try {
+		const { serial, moduleType: type} = req.body;
+		let petzeiraModule = await prisma.module.findUnique({
+			where: {
+				serial_type: { serial, type },
+			},
+			select: {
+				ownerId: true,
+			},
+		});
+
+		if (!petzeiraModule) {
+			return res.status(400).json({ error: "No Module Error" });
+		}
+
+		if (petzeiraModule.ownerId != req.session.user.id) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		req.mqttClient.sendCommand(serial, "read", JSON.stringify({type}));
+
+
+		res.json({message: "Requested successfuly"});
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: "Internal server error" });

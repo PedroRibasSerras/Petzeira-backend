@@ -23,6 +23,7 @@ const port = 3333;
 
 petzeiraMqtt.connect()
 
+
 app.use(cors())
 app.use(express.json());
 app.use(cookieParser());
@@ -43,6 +44,11 @@ app.use(
 		rolling: true,
 	})
 );
+
+app.use((req,res,next) => {
+	req.mqttClient = petzeiraMqtt;
+	next()
+})
 
 app.use("/auth", authRoutes);
 app.use(userRegisterRoutes);

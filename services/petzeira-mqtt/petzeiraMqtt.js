@@ -7,7 +7,6 @@ const mqttSecret = process.env.MQTT_SECRET;
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-
 const saveComandEvent = async (data) => {
 	try {
 		let modulePetzeira = await prisma.module.findUnique({
@@ -26,6 +25,7 @@ const saveComandEvent = async (data) => {
 				moduleSerial: data.serial,
 				moduleType: modulePetzeira.type,
 				event: data.command,
+				extraData: data.extraData,
 			},
 			select: { id: true },
 		});
@@ -40,11 +40,21 @@ const saveComandEvent = async (data) => {
 };
 
 let commands = {
-	schedule: async (petzeiraMqtt, data) => {
+	sendSchedule: async (petzeiraMqtt, data) => {
 		if (data.message && data.message == "ok") {
 			saveComandEvent(data);
 			return;
 		}
+	},
+	calibre: async (petzeiraMqtt, data) => {
+		if (data.message && data.message == "ok") {
+			// {”message”:”ok”, “moduleType”:”<module_type>”, calibreWeight:”<value>”}
+			data.extraData = `${data.calibreWeight}`;
+			saveComandEvent(data, true);
+			return;
+		}
+	},
+	schedule: async (petzeiraMqtt, data) => {
 		try {
 			let schedule = await prisma.scheduling.findMany({
 				where: {
@@ -289,9 +299,8 @@ class PetzeiraMqtt {
 
 				data.serial = serial;
 				data.command = command;
-				if(commands[command])
-					commands[command](this, data);
-				else{
+				if (commands[command]) commands[command](this, data);
+				else {
 					this.sendCommand(topics[1], command, "Command Not Found");
 					return -1;
 				}
