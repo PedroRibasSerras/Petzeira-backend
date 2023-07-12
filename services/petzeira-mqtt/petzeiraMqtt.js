@@ -9,6 +9,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const saveComandEvent = async (data) => {
 	try {
+		console.log("saveComandEvent")
 		let modulePetzeira = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial: data.serial, type: data.moduleType },
@@ -29,6 +30,8 @@ const saveComandEvent = async (data) => {
 			},
 			select: { id: true },
 		});
+		console.log("event")
+		console.log(event)
 
 		if (!event) {
 			throw "Event Creation Error";

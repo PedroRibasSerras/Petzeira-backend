@@ -257,7 +257,7 @@ router.get("/fed", async (req, res) => {
 		if (petzeiraModule.ownerId != req.session.user.id) {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
-
+		console.log(petzeiraModule)
 		res.json(petzeiraModule.events);
 	} catch (error) {
 		console.error(error);
