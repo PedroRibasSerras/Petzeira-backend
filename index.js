@@ -24,7 +24,12 @@ const port = 3333;
 petzeiraMqtt.connect()
 
 
-app.use(cors())
+app.use(cors(
+	{
+		origin:"http://localhost:3000",
+		credentials: true
+	}
+))
 app.use(express.json());
 app.use(cookieParser());
 
@@ -35,13 +40,13 @@ app.use(
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
-			domain: "localhost",
+			// domain: "localhost",
 			maxAge: 86400000, // Tempo de vida do cookie: 24 horas
 			secure: false, // O cookie só será enviado em conexões HTTPS
 			httpOnly: false, // O cookie não pode ser acessado por JavaScript no navegador
-			sameSite: "none", // O cookie só será enviado em solicitações do mesmo site
+			// sameSite: "none", // O cookie só será enviado em solicitações do mesmo site
 		},
-		rolling: true,
+		// rolling: true,
 	})
 );
 

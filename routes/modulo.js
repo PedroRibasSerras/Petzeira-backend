@@ -98,7 +98,8 @@ router.post("/mqtt-token/verify", async (req, res) => {
 router.get("/schedule", async (req, res) => {
 	try {
 		const { serial, moduleType: type } = req.body;
-
+		console.log(serial);
+		console.log(type);
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -106,12 +107,15 @@ router.get("/schedule", async (req, res) => {
 			select: {
 				ownerId: true,
 				scheduling: {
-					select:{
-						id:true,
-						moduleSerial:true,
-						moduleType:true,
-						time:true
-					}
+					orderBy: {
+						time: "asc",
+					},
+					select: {
+						id: true,
+						moduleSerial: true,
+						moduleType: true,
+						time: true,
+					},
 				},
 			},
 		});
@@ -133,9 +137,9 @@ router.get("/schedule", async (req, res) => {
 
 router.post("/schedule", async (req, res) => {
 	try {
-		console.log("schedule")
+		console.log("schedule");
 		const { serial, moduleType: type, time } = req.body;
-		
+
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -153,9 +157,9 @@ router.post("/schedule", async (req, res) => {
 			throw "Unauthorized";
 		}
 
-		let [hours,minutes] = String(time).split(":")
-		hours += 3
-		newTime = hours * 60 * 60 + minutes * 60
+		let [hours, minutes] = String(time).split(":");
+		hours += 3;
+		newTime = hours * 60 * 60 + minutes * 60;
 		let newSchedule = await prisma.scheduling.create({
 			data: {
 				moduleSerial: serial,
@@ -163,7 +167,7 @@ router.post("/schedule", async (req, res) => {
 				time: `${newTime}`,
 			},
 		});
-		console.log("after create")
+		console.log("after create");
 
 		res.json(newSchedule);
 
@@ -172,15 +176,19 @@ router.post("/schedule", async (req, res) => {
 				moduleSerial: serial,
 				moduleType: type,
 			},
-			select:{
-				id:true,
-				moduleSerial:true,
-				moduleType:true,
-				time:true
-			}
+			select: {
+				id: true,
+				moduleSerial: true,
+				moduleType: true,
+				time: true,
+			},
 		});
 
-		req.mqttClient.sendCommand(serial, "sendSchedule", JSON.stringify(schedules));
+		req.mqttClient.sendCommand(
+			serial,
+			"sendSchedule",
+			JSON.stringify(schedules)
+		);
 	} catch (error) {
 		console.error(error);
 		if (error.meta && error.meta.target)
@@ -226,7 +234,6 @@ router.delete("/schedule", async (req, res) => {
 			return res.status(400).json({ error: "Scheduling Delete Error" });
 		}
 
-		
 		res.json({ message: "Scheduling Deleted Successfuly" });
 
 		let schedules = await prisma.scheduling.findMany({
@@ -236,21 +243,32 @@ router.delete("/schedule", async (req, res) => {
 			},
 		});
 
-		req.mqttClient.sendCommand(schedule.module.serial, "sendSchedule", JSON.stringify(schedules));
-
-		
+		req.mqttClient.sendCommand(
+			schedule.module.serial,
+			"sendSchedule",
+			JSON.stringify(schedules)
+		);
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ error: "Internal server error" });
 	}
 });
 
-router.get("/fed", async (req, res) => {
+router.post("/getfed", async (req, res) => {
 	try {
 		const { serial, moduleType: type, limit, page } = req.body;
 		let eventsQueryConfig = {
 			where: {
 				event: "fed",
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+			select: {
+				id: true,
+				moduleSerial: true,
+				moduleType: true,
+				createdAt: true,
 			},
 		};
 		if (limit != undefined && page != undefined) {
@@ -275,7 +293,6 @@ router.get("/fed", async (req, res) => {
 		if (petzeiraModule.ownerId != req.session.user.id) {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
-		console.log(petzeiraModule)
 		res.json(petzeiraModule.events);
 	} catch (error) {
 		console.error(error);
@@ -285,7 +302,7 @@ router.get("/fed", async (req, res) => {
 
 router.post("/fed", async (req, res) => {
 	try {
-		const { serial, moduleType: type} = req.body;
+		const { serial, moduleType: type } = req.body;
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -303,10 +320,10 @@ router.post("/fed", async (req, res) => {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
 
-		req.mqttClient.sendCommand(serial, "act", JSON.stringify({type}));
+		req.mqttClient.sendCommand(serial, "act", JSON.stringify({ type }));
 
-
-		res.json({message: "Requested successfuly"});
+		console.log("act sended");
+		res.json({ message: "Requested successfuly" });
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: "Internal server error" });
@@ -315,7 +332,7 @@ router.post("/fed", async (req, res) => {
 
 router.post("/calibre", async (req, res) => {
 	try {
-		const { serial, moduleType: type, calibreWeight} = req.body;
+		const { serial, moduleType: type, calibreWeight } = req.body;
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -333,21 +350,28 @@ router.post("/calibre", async (req, res) => {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
 
-		req.mqttClient.sendCommand(serial, "calibre", JSON.stringify({moduleType: type, calibreWeight}));
+		req.mqttClient.sendCommand(
+			serial,
+			"calibre",
+			JSON.stringify({ moduleType: type, calibreWeight })
+		);
 
-
-		res.json({message: "Requested successfuly"});
+		res.json({ message: "Requested successfuly" });
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: "Internal server error" });
 	}
 });
 
-
-router.get("/measurements", async (req, res) => {
+router.post("/getmeasurements", async (req, res) => {
 	try {
 		const { serial, moduleType: type, limit, page } = req.body;
-		let measurementsQueryConfig = {};
+		let measurementsQueryConfig = {
+			orderBy: {
+				createdAt: "desc",
+			},
+			select: { value: true, createdAt: true }
+		};
 		if (limit != undefined && page != undefined) {
 			measurementsQueryConfig.skip = page * limit;
 			measurementsQueryConfig.take = limit;
@@ -382,7 +406,7 @@ router.get("/measurements", async (req, res) => {
 
 router.post("/measurements", async (req, res) => {
 	try {
-		const { serial, moduleType: type} = req.body;
+		const { serial, moduleType: type } = req.body;
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
 				serial_type: { serial, type },
@@ -400,19 +424,18 @@ router.post("/measurements", async (req, res) => {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
 
-		req.mqttClient.sendCommand(serial, "read", JSON.stringify({type}));
+		req.mqttClient.sendCommand(serial, "read", JSON.stringify({ type }));
 
-
-		res.json({message: "Requested successfuly"});
+		res.json({ message: "Requested successfuly" });
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: "Internal server error" });
 	}
 });
 
-router.get("/events", async (req, res) => {
+router.post("/getevents", async (req, res) => {
 	try {
-		const { serial, moduleType: type} = req.body;
+		const { serial, moduleType: type } = req.body;
 
 		let petzeiraModule = await prisma.module.findUnique({
 			where: {
@@ -420,7 +443,16 @@ router.get("/events", async (req, res) => {
 			},
 			select: {
 				ownerId: true,
-				events: true,
+				events: {
+					orderBy: {
+						createdAt: "desc",
+					},
+					select: {
+						id: true,
+						event: true,
+						createdAt: true,
+					},
+				},
 			},
 		});
 
@@ -431,7 +463,6 @@ router.get("/events", async (req, res) => {
 		if (petzeiraModule.ownerId != req.session.user.id) {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
-		console.log(petzeiraModule)
 		res.json(petzeiraModule.events);
 	} catch (error) {
 		console.error(error);

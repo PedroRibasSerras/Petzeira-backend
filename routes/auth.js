@@ -51,6 +51,8 @@ router.post("/login", async (req, res) => {
 		req.session.user = user;
 		req.session.save();
 
+		// res.cookie('rememberme', 'yes', { maxAge: 900000, httpOnly: false});
+
 		res.json({ message: "Login successful", data: user });
 	} catch (error) {
 		console.log(error);
