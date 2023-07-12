@@ -133,6 +133,7 @@ router.get("/schedule", async (req, res) => {
 
 router.post("/schedule", async (req, res) => {
 	try {
+		console.log("schedule")
 		const { serial, moduleType: type, time } = req.body;
 		
 		let petzeiraModule = await prisma.module.findUnique({
@@ -152,9 +153,11 @@ router.post("/schedule", async (req, res) => {
 			throw "Unauthorized";
 		}
 
+		console.log("before time")
 		let [hours,minutes] = String(time).split(":")
 		hours += 3
 		time = hours * 60 * 60 + minutes * 60
+		console.log("after time")
 		let newSchedule = await prisma.scheduling.create({
 			data: {
 				moduleSerial: serial,
@@ -162,6 +165,7 @@ router.post("/schedule", async (req, res) => {
 				time,
 			},
 		});
+		console.log("after create")
 
 		res.json(newSchedule);
 
