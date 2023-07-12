@@ -64,6 +64,12 @@ let commands = {
 					moduleType: data.moduleType,
 					moduleSerial: data.serial,
 				},
+				select:{
+					id:true,
+					moduleSerial:true,
+					moduleType:true,
+					time:true
+				}
 			});
 			if (!schedule) {
 				petzeiraMqtt.sendCommand(data.serial, data.command, "[]");
