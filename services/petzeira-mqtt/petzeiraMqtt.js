@@ -65,10 +65,8 @@ let commands = {
 					moduleSerial: data.serial,
 				},
 				select:{
-					id:true,
-					moduleSerial:true,
 					moduleType:true,
-					time:true
+					time:true,
 				}
 			});
 			if (!schedule) {
