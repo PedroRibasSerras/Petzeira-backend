@@ -19,7 +19,7 @@ services:
       - petzeira-network
     volumes:
       - ./:/code
-    command: sh -c "npm install && npm start"
+    command: sh -c "npm install && npx prisma db push --accept-data-loss && npm start"
     depends_on:
       - "db"
 

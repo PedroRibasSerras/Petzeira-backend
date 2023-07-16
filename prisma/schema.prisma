@@ -38,13 +38,14 @@ model Module {
 
 model Scheduling {
   id         String    @id @default(uuid())
-  moduleId   String
   moduleSerial    String
   moduleType      String
   module          Module @relation(fields: [moduleSerial, moduleType], references: [serial, type])
-  value      DateTime  @db.Time
+  time       String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
+  @@unique([moduleSerial, moduleType, time])
 }
 
 model Measurement {
@@ -52,7 +53,7 @@ model Measurement {
   moduleSerial    String
   moduleType      String
   module          Module @relation(fields: [moduleSerial, moduleType], references: [serial, type])
-  value      Float
+  value      String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }
