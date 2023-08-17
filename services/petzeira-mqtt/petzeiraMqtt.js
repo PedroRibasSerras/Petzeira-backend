@@ -2,221 +2,10 @@
 
 const mqtt = require("mqtt");
 const { decodeToken } = require("../../utils/mqttToken");
+const commands = require("./commands")
+
 require("dotenv").config();
 const mqttSecret = process.env.MQTT_SECRET;
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
-const saveComandEvent = async (data) => {
-	try {
-		console.log("saveComandEvent")
-		let modulePetzeira = await prisma.module.findUnique({
-			where: {
-				serial_type: { serial: data.serial, type: data.moduleType },
-			},
-		});
-
-		if (!modulePetzeira) {
-			throw "No Module Error";
-		}
-
-		let event = await prisma.event.create({
-			data: {
-				userId: modulePetzeira.ownerId,
-				moduleSerial: data.serial,
-				moduleType: modulePetzeira.type,
-				event: data.command,
-				extraData: data.extraData,
-			},
-			select: { id: true },
-		});
-		console.log("event")
-		console.log(event)
-
-		if (!event) {
-			throw "Event Creation Error";
-		}
-	} catch (error) {
-		console.log(error);
-		throw error;
-	}
-};
-
-let commands = {
-	sendSchedule: async (petzeiraMqtt, data) => {
-		if (data.message && data.message == "ok") {
-			saveComandEvent(data);
-			return;
-		}
-	},
-	calibre: async (petzeiraMqtt, data) => {
-		if (data.message && data.message == "ok") {
-			// {”message”:”ok”, “moduleType”:”<module_type>”, calibreWeight:”<value>”}
-			data.extraData = `${data.calibreWeight}`;
-			saveComandEvent(data, true);
-			return;
-		}
-	},
-	schedule: async (petzeiraMqtt, data) => {
-		try {
-			let schedule = await prisma.scheduling.findMany({
-				where: {
-					moduleType: data.moduleType,
-					moduleSerial: data.serial,
-				},
-				select:{
-					moduleType:true,
-					time:true,
-				}
-			});
-			if (!schedule) {
-				petzeiraMqtt.sendCommand(data.serial, data.command, "[]");
-			} else {
-				petzeiraMqtt.sendCommand(
-					data.serial,
-					data.command,
-					JSON.stringify(schedule)
-				);
-			}
-			console.log(schedule)
-		} catch (error) {
-			console.log(error)
-			if (error.meta && error.meta.target)
-				petzeiraMqtt.sendCommand(data.serial, data.command, error.meta.target);
-			else petzeiraMqtt.sendCommand(data.serial, data.command, error);
-		}
-	},
-	ping: async (petzeiraMqtt, data) => {
-		try {
-			let modulePetzeira = await prisma.module.findFirst({
-				where: { serial: data.serial },
-			});
-
-			if (!modulePetzeira) {
-				throw "No module";
-			}
-			let event = await prisma.event.create({
-				data: {
-					userId: modulePetzeira.ownerId,
-					moduleSerial: data.serial,
-					event: data.command,
-				},
-				select: { id: true },
-			});
-
-			if (!event) {
-				throw "Event Creation Error";
-			}
-
-			petzeiraMqtt.sendCommand(data.serial, data.command, "ok");
-		} catch (error) {
-			console.log(error);
-			if (error.meta && error.meta.target)
-				petzeiraMqtt.sendCommand(data.serial, data.command, error.meta.target);
-			else petzeiraMqtt.sendCommand(data.serial, data.command, error);
-		}
-	},
-	send: async (petzeiraMqtt, data) => {
-		try {
-			let modulePetzeira = await prisma.module.findUnique({
-				where: {
-					serial_type: { serial: data.serial, type: data.moduleType },
-				},
-			});
-
-			if (!modulePetzeira) {
-				throw "No module";
-			}
-
-			//Save data
-			let value = await prisma.measurement.create({
-				data: {
-					moduleSerial: data.serial,
-					moduleType: data.moduleType,
-					value: data.value,
-				},
-			});
-
-			if (!value) {
-				throw "Value Creation Error";
-			}
-
-			let event = await prisma.event.create({
-				data: {
-					userId: modulePetzeira.ownerId,
-					moduleSerial: data.serial,
-					moduleType: modulePetzeira.type,
-					event: data.command,
-				},
-				select: { id: true },
-			});
-
-			if (!event) {
-				throw "Event Creation Error";
-			}
-
-			petzeiraMqtt.sendCommand(data.serial, data.command, "ok");
-		} catch (error) {
-			if (error.meta && error.meta.target)
-				petzeiraMqtt.sendCommand(data.serial, data.command, error.meta.target);
-			else petzeiraMqtt.sendCommand(data.serial, data.command, error);
-		}
-	},
-	act: async (petzeiraMqtt, data) => {
-		await saveComandEvent(data);
-	},
-	read: async (petzeiraMqtt, data) => {
-		try {
-			let modulePetzeira = await prisma.module.findUnique({
-				where: {
-					serial_type: { serial: data.serial, type: data.moduleType },
-				},
-			});
-
-			if (!modulePetzeira) {
-				throw "No module";
-			}
-
-			//Save data
-			let value = await prisma.measurement.create({
-				data: {
-					moduleSerial: data.serial,
-					moduleType: data.moduleType,
-					value: data.value,
-				},
-			});
-
-			if (!value) {
-				throw "Value Creation Error";
-			}
-
-			let event = await prisma.event.create({
-				data: {
-					userId: modulePetzeira.ownerId,
-					moduleSerial: data.serial,
-					moduleType: modulePetzeira.type,
-					event: data.command,
-				},
-				select: { id: true },
-			});
-
-			if (!event) {
-				throw "Event Creation Error";
-			}
-		} catch (error) {
-			console.log("error");
-		}
-	},
-	fed: async (petzeiraMqtt, data) => {
-		try {
-			await saveComandEvent(data);
-			petzeiraMqtt.sendCommand(data.serial, data.command, "ok");
-		} catch (error) {
-			console.log(error);
-			petzeiraMqtt.sendCommand(data.serial, data.command, error);
-		}
-	},
-};
 
 class PetzeiraMqtt {
 	constructor(
@@ -258,7 +47,7 @@ class PetzeiraMqtt {
 		this.client.on(
 			"message",
 			((topic, message) => {
-				console.log(`Received message on topic ${topic}: ${message}`);
+				// console.log(`Received message on topic ${topic}: ${message}`);
 				let topics = topic.split("/");
 				let channel = topics[0];
 				if (channel != "client") {
@@ -267,7 +56,7 @@ class PetzeiraMqtt {
 
 				let tempMessage = String(message);
 				let messageSize = tempMessage.split("\n").length;
-				console.log(`Message size: ${messageSize}`);
+				// console.log(`Message size: ${messageSize}`);
 				if (messageSize < 1) {
 					this.sendMessage(topics[1], "Malformed message");
 					return -1;
@@ -276,16 +65,15 @@ class PetzeiraMqtt {
 
 				let position = tempMessage.search("\n");
 				let token = tempMessage.substring(0, position);
-				console.log(token);
+				// console.log(token);
 
 				tempMessage = tempMessage.substring(position + 1);
 				position = tempMessage.search("\n");
 				let command = tempMessage.substring(0, position);
-				console.log(command);
+				// console.log(command);
 
 				let data = {};
 				if (hasData) {
-					console.log("hasData")
 					tempMessage = tempMessage.substring(position + 1);
 					try {
 						data = JSON.parse(tempMessage);
@@ -294,7 +82,7 @@ class PetzeiraMqtt {
 						return -1;
 					}
 
-					console.log(data)
+					// console.log(data)
 				}
 
 				let decodedToken = decodeToken(token);
@@ -352,8 +140,6 @@ class PetzeiraMqtt {
 		let message = `${(now.getHours() * 60 * 60 + now.getMinutes()* 60)}`;
 		this.sendMessage(endpoint, message);
 	}
-
-	sendMessageToClient(serial, message) {}
 }
 
 module.exports = PetzeiraMqtt;
